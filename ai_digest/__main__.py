@@ -57,7 +57,7 @@ def collect(cfg: Config, mode: str, client: httpx.Client) -> tuple[list[Item], l
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="ai_digest")
-    ap.add_argument("mode", choices=["realtime", "digest"])
+    ap.add_argument("mode", choices=["realtime", "digest", "test"])
     ap.add_argument("--dry-run", action="store_true", help="print what would be posted; change nothing")
     ap.add_argument("--seed", action="store_true", help="mark everything current as seen, post nothing")
     args = ap.parse_args(argv)
@@ -70,6 +70,15 @@ def main(argv: list[str] | None = None) -> int:
     if not hook and not args.dry_run and not args.seed:
         print("DISCORD_WEBHOOK_URL is not set", file=sys.stderr)
         return 2
+
+    if args.mode == "test":
+        with httpx.Client(timeout=st["http_timeout"]) as client:
+            webhook.send_embeds(hook, [{
+                "title": "AI Radar is connected ✅",
+                "description": "Webhook works. New AI news and releases will show up here.",
+                "color": webhook.COLORS["release"]}], client)
+        print("test message sent", file=sys.stderr)
+        return 0
 
     state = State.load()
     headers = {"User-Agent": st["user_agent"]}

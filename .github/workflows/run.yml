@@ -7,10 +7,10 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "realtime | digest | seed"
+        description: "realtime | digest | seed | test"
         default: realtime
         type: choice
-        options: [realtime, digest, seed]
+        options: [realtime, digest, seed, test]
 
 permissions:
   contents: write
