@@ -1,0 +1,65 @@
+# Edit this file to add/remove sources or tune noise. No code changes needed.
+#
+# tier 1  -> posted to the channel as soon as it is seen (checked every ~30 min)
+# tier 2/3-> collected into ONE daily digest message
+#
+# filter:  ai       = title/summary must mention an AI term
+#          release  = title must look like a launch/release or name a known model family
+# exclude_title: list of regexes; matching titles are dropped
+
+settings:
+  user_agent: "Mozilla/5.0 (compatible; ai-radar-bot/1.0; +https://github.com/)"
+  http_timeout: 20
+  max_age_days: 3            # ignore anything older (per-source override: max_age_days)
+  seen_ttl_days: 45          # forget seen ids after this long
+  summary_chars: 260
+  max_posts_per_run: 8       # realtime mode cap; overflow is picked up next run
+  digest_caps:               # max items per section in the daily digest
+    lab: 4
+    release: 4
+    hf: 4
+    news: 6
+    community: 6
+    paper: 5
+
+keywords:
+  ai_terms: [ai, "a.i.", llm, llms, gpt, chatgpt, claude, gemini, llama, "language model", "language models",
+             "machine learning", "deep learning", "neural", "transformer", "diffusion", "openai", "anthropic",
+             "deepmind", "mistral", "deepseek", qwen, agent, agents, agentic, "generative", copilot, "foundation model",
+             nvidia, "hugging face", inference, "fine-tuning", "fine-tuned", multimodal, "reasoning model", robotics]
+  release_terms: [introducing, introduces, launch, launches, launched, release, releases, released, announce,
+                  announces, announced, "now available", "open-source", "open source", "open weights", open-weight,
+                  unveil, unveils, debut, debuts, preview, "rolls out", "rolling out", "new model", benchmark,
+                  "system card", "model card"]
+  model_families: [claude, gpt, chatgpt, gemini, gemma, llama, qwen, mistral, mixtral, deepseek, grok, phi,
+                   nemotron, kimi, glm, sora, veo, imagen, flux, "stable diffusion", midjourney, whisper,
+                   "command r", olmo, minimax, ernie, o1, o3, o4, codex, "claude code", sonnet, opus, haiku, fable]
+
+sources:
+  # ---------------- Tier 1: labs & model/tool releases ----------------
+  - {name: OpenAI,            type: rss, tier: 1, category: lab, url: "https://openai.com/news/rss.xml", limit: 25}
+  - {name: Anthropic,         type: rss, tier: 1, category: lab, url: "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_news.xml", limit: 25}
+  - {name: Anthropic Research,type: rss, tier: 1, category: lab, url: "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_research.xml", limit: 25}
+  - {name: Google DeepMind,   type: rss, tier: 1, category: lab, url: "https://deepmind.google/blog/rss.xml", limit: 25}
+  - {name: Google AI,         type: rss, tier: 1, category: lab, url: "https://blog.google/technology/ai/rss/", filter: release}
+  - {name: Mistral,           type: rss, tier: 1, category: lab, url: "https://mistral.ai/rss.xml", limit: 25}
+  - {name: xAI,               type: rss, tier: 1, category: lab, url: "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_xainews.xml", limit: 25}
+  - {name: Qwen,              type: rss, tier: 1, category: lab, url: "https://qwenlm.github.io/blog/index.xml", limit: 25}
+  - {name: vLLM,              type: github_releases, tier: 1, category: release, repo: vllm-project/vllm, minor_only: true}
+  - {name: Ollama,            type: github_releases, tier: 1, category: release, repo: ollama/ollama, minor_only: true}
+  - {name: Transformers,      type: github_releases, tier: 1, category: release, repo: huggingface/transformers, minor_only: true}
+
+  # ---------------- Tier 2: daily digest ----------------
+  - {name: Hugging Face Blog, type: rss, tier: 2, category: hf, url: "https://huggingface.co/blog/feed.xml", limit: 30, filter: release}
+  - {name: NVIDIA Blog,       type: rss, tier: 2, category: lab, url: "https://blogs.nvidia.com/feed/", filter: release}
+  - {name: HF Trending Models,type: hf_models, tier: 2, category: hf, min_likes: 300, max_age_days: 30, limit: 40}
+  - {name: Hacker News,       type: hn, tier: 2, category: community, filter: ai, min_points: 150, window_hours: 30,
+     queries: [LLM, OpenAI, Anthropic, Claude, Gemini, GPT, "AI model", Llama, DeepSeek, agents]}
+  - {name: TechCrunch,        type: rss, tier: 2, category: news, url: "https://techcrunch.com/category/artificial-intelligence/feed/"}
+  - {name: The Verge,         type: rss, tier: 2, category: news, url: "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml"}
+  - {name: Ars Technica,      type: rss, tier: 2, category: news, url: "https://arstechnica.com/ai/feed/"}
+  - {name: Simon Willison,    type: rss, tier: 2, category: community, url: "https://simonwillison.net/atom/everything/", filter: ai, summary: false}
+
+  # ---------------- Tier 3: digest, lowest priority ----------------
+  - {name: r/LocalLLaMA,      type: rss, tier: 3, category: community, url: "https://www.reddit.com/r/LocalLLaMA/top/.rss?t=day", limit: 6, summary: false}
+  - {name: HF Daily Papers,   type: hf_papers, tier: 3, category: paper, min_upvotes: 15, limit: 30}

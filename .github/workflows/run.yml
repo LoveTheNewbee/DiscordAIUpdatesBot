@@ -1,0 +1,64 @@
+name: AI Radar
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"   # realtime: tier-1 labs & releases, every 30 min
+    - cron: "0 12 * * *"     # daily digest, 12:00 UTC (edit to taste)
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "realtime | digest | seed"
+        default: realtime
+        type: choice
+        options: [realtime, digest, seed]
+
+permissions:
+  contents: write
+
+# Only one run at a time so state/seen.json commits never race.
+concurrency:
+  group: ai-radar
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Pick mode
+        id: mode
+        run: |
+          if [ "${{ github.event.schedule }}" = "0 12 * * *" ]; then echo "mode=digest" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then echo "mode=${{ inputs.mode }}" >> "$GITHUB_OUTPUT"
+          else echo "mode=realtime" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Run
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          if [ "${{ steps.mode.outputs.mode }}" = "seed" ]; then
+            python -m ai_digest realtime --seed
+            python -m ai_digest digest --seed
+          else
+            python -m ai_digest ${{ steps.mode.outputs.mode }}
+          fi
+
+      - name: Commit state
+        run: |
+          git config user.name "ai-radar[bot]"
+          git config user.email "ai-radar@users.noreply.github.com"
+          git add state/seen.json
+          if ! git diff --staged --quiet; then
+            git commit -m "chore: update seen state"
+            git pull --rebase --autostash
+            git push
+          fi
